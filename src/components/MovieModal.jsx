@@ -11,6 +11,9 @@ export default function MovieModal({
   onClose,
   isFavorite = false,
   onToggleFavorite,
+  isInWatchlist = false,
+  onToggleWatchlist,
+  watchlistEntry,
 }) {
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -120,14 +123,14 @@ export default function MovieModal({
                 {onToggleFavorite && (
                   <button
                     onClick={() => onToggleFavorite(movie)}
-                    className={`inline-flex items-center gap-1.5 text-xs font-mono px-2 py-0.5 rounded border transition-colors ${
+                    className={`inline-flex items-center gap-1.5 text-xs font-mono px-2 py-0.5 rounded border transition-all duration-200 hover:scale-105 active:animate-button-press ${
                       isFavorite
-                        ? "text-gold-400 border-gold-400/40 bg-gold-400/10"
+                        ? "text-gold-400 border-gold-400/40 bg-gold-400/10 hover:shadow-lg hover:shadow-gold-400/30"
                         : "text-white/50 border-white/15 hover:text-white hover:border-white/30"
                     }`}
                   >
                     <svg
-                      className="w-3 h-3"
+                      className="w-3 h-3 transition-transform duration-200"
                       viewBox="0 0 24 24"
                       fill={isFavorite ? "currentColor" : "none"}
                     >
@@ -140,6 +143,26 @@ export default function MovieModal({
                       />
                     </svg>
                     {isFavorite ? "Saved" : "Save"}
+                  </button>
+                )}
+                {onToggleWatchlist && (
+                  <button
+                    onClick={() => onToggleWatchlist(movie)}
+                    className={`inline-flex items-center gap-1.5 text-xs font-mono px-2 py-0.5 rounded border transition-all duration-200 hover:scale-105 active:animate-button-press ${
+                      isInWatchlist
+                        ? "text-blue-400 border-blue-400/40 bg-blue-400/10 hover:shadow-lg hover:shadow-blue-400/30"
+                        : "text-white/50 border-white/15 hover:text-white hover:border-white/30"
+                    }`}
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M4 5h16M4 12h16M4 19h16"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    {isInWatchlist ? "In Watchlist" : "Add to Watchlist"}
                   </button>
                 )}
               </div>
@@ -190,16 +213,58 @@ export default function MovieModal({
             )}
           </div>
 
+          {watchlistEntry && watchlistEntry.note && (
+            <div className="mt-5 bg-cinema-700/50 rounded-lg p-3 border border-white/5">
+              <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">
+                Your Note
+              </div>
+              <p className="text-white/70 text-sm font-body">
+                {watchlistEntry.note}
+              </p>
+            </div>
+          )}
+
+          {watchlistEntry &&
+            watchlistEntry.tags &&
+            watchlistEntry.tags.length > 0 && (
+              <div
+                className="mt-3 flex items-start gap-3 animate-scale-in"
+                style={{ animationDelay: "0.1s" }}
+              >
+                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mt-1">
+                  Tags
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {watchlistEntry.tags.map((tag, idx) => (
+                    <span
+                      key={tag}
+                      className="text-[10px] px-2 py-1 rounded bg-white/5 border border-white/10 text-white/60 font-mono animate-scale-in transition-all duration-200 hover:scale-105 hover:bg-white/10 hover:text-gold-400 hover:border-gold-400/30"
+                      style={{ animationDelay: `${100 + idx * 40}ms` }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
           {/* TMDB link */}
-          <div className="mt-5 flex justify-end">
+          <div
+            className="mt-5 flex justify-end animate-fade-in"
+            style={{ animationDelay: "0.2s" }}
+          >
             <a
               href={`https://www.themoviedb.org/movie/${movie.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-mono text-white/30 hover:text-gold-400 transition-colors border border-white/10 hover:border-gold-400/30 rounded-lg px-3 py-2"
+              className="inline-flex items-center gap-2 text-xs font-mono text-white/30 hover:text-gold-400 transition-all duration-200 border border-white/10 hover:border-gold-400/30 hover:shadow-lg hover:shadow-gold-400/20 rounded-lg px-3 py-2 hover:scale-105 active:animate-button-press"
               onClick={(e) => e.stopPropagation()}
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+              <svg
+                className="w-3.5 h-3.5 transition-transform duration-200"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path
                   d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"
                   stroke="currentColor"

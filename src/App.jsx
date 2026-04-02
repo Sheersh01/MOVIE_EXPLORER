@@ -8,9 +8,10 @@ import ErrorState from "./components/ErrorState";
 import EmptyState from "./components/EmptyState";
 import MovieModal from "./components/MovieModal";
 import Pagination from "./components/Pagination";
+import WatchlistPanel from "./components/WatchlistPanel";
+import RecentlyViewedStrip from "./components/RecentlyViewedStrip";
 import { useMovies, useGenres } from "./hooks/useMovies";
 
-// Simple debounce hook
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -36,10 +37,24 @@ const RESULT_SORT_OPTIONS = [
   { label: "Title A-Z", value: "title_asc" },
 ];
 
+const FAVORITES_KEY = "movie_explorer_favorites";
+const WATCHLIST_KEY = "movie_explorer_watchlist";
+const RECENTLY_VIEWED_KEY = "movie_explorer_recently_viewed";
+
 function getYearValue(releaseDate) {
   if (!releaseDate) return 0;
   const year = Number.parseInt(releaseDate.slice(0, 4), 10);
   return Number.isNaN(year) ? 0 : year;
+}
+
+function readStoredArray(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export default function App() {
@@ -50,18 +65,39 @@ export default function App() {
   const [sortMode, setSortMode] = useState("popular");
   const [resultSortMode, setResultSortMode] = useState("default");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const raw = localStorage.getItem("movie_explorer_favorites");
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  const [showWatchlist, setShowWatchlist] = useState(false);
+  const [favorites, setFavorites] = useState(() =>
+    readStoredArray(FAVORITES_KEY),
+  );
+  const [watchlist, setWatchlist] = useState(() =>
+    readStoredArray(WATCHLIST_KEY),
+  );
+  const [recentlyViewed, setRecentlyViewed] = useState(() =>
+    readStoredArray(RECENTLY_VIEWED_KEY),
+  );
 
   const query = useDebounce(rawQuery, 420);
   const genres = useGenres();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryParam = params.get("q");
+    const genreParam = params.get("genre");
+    const pageParam = Number.parseInt(params.get("page") || "", 10);
+    const feedParam = params.get("feed");
+    const orderParam = params.get("order");
+    const favoritesParam = params.get("fav");
+
+    if (queryParam) setRawQuery(queryParam);
+    if (genreParam) setActiveGenre(Number.parseInt(genreParam, 10) || null);
+    if (Number.isFinite(pageParam) && pageParam > 0) setPage(pageParam);
+    if (SORT_OPTIONS.some((opt) => opt.value === feedParam))
+      setSortMode(feedParam);
+    if (RESULT_SORT_OPTIONS.some((opt) => opt.value === orderParam)) {
+      setResultSortMode(orderParam);
+    }
+    if (favoritesParam === "1") setShowFavoritesOnly(true);
+  }, []);
 
   // Reset to page 1 when query/genre/sort changes
   useEffect(() => {
@@ -82,19 +118,96 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("movie_explorer_favorites", JSON.stringify(favorites));
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
   }, [favorites]);
+
+  useEffect(() => {
+    localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist));
+  }, [watchlist]);
+
+  useEffect(() => {
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(recentlyViewed));
+  }, [recentlyViewed]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (rawQuery.trim()) params.set("q", rawQuery.trim());
+    if (activeGenre) params.set("genre", String(activeGenre));
+    if (page > 1) params.set("page", String(page));
+    if (sortMode !== "popular") params.set("feed", sortMode);
+    if (resultSortMode !== "default") params.set("order", resultSortMode);
+    if (showFavoritesOnly) params.set("fav", "1");
+
+    const queryString = params.toString();
+    const nextUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
+    window.history.replaceState({}, "", nextUrl);
+  }, [
+    rawQuery,
+    activeGenre,
+    page,
+    sortMode,
+    resultSortMode,
+    showFavoritesOnly,
+  ]);
 
   const favoriteIds = useMemo(
     () => new Set(favorites.map((movie) => movie.id)),
     [favorites],
   );
 
+  const watchlistIds = useMemo(
+    () => new Set(watchlist.map((movie) => movie.id)),
+    [watchlist],
+  );
+
+  const watchlistMap = useMemo(() => {
+    return watchlist.reduce((acc, item) => {
+      acc[item.id] = item;
+      return acc;
+    }, {});
+  }, [watchlist]);
+
   const toggleFavorite = useCallback((movie) => {
     setFavorites((prev) => {
       const exists = prev.some((item) => item.id === movie.id);
       if (exists) return prev.filter((item) => item.id !== movie.id);
       return [movie, ...prev];
+    });
+  }, []);
+
+  const toggleWatchlist = useCallback((movie) => {
+    setWatchlist((prev) => {
+      const exists = prev.some((item) => item.id === movie.id);
+      if (exists) return prev.filter((item) => item.id !== movie.id);
+      return [{ ...movie, note: "", tags: [] }, ...prev];
+    });
+  }, []);
+
+  const removeFromWatchlist = useCallback((id) => {
+    setWatchlist((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const updateWatchlistMeta = useCallback((id, { note, tags }) => {
+    setWatchlist((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              note: typeof note === "string" ? note : item.note || "",
+              tags: Array.isArray(tags) ? tags : item.tags || [],
+            }
+          : item,
+      ),
+    );
+  }, []);
+
+  const openMovie = useCallback((movie) => {
+    setSelectedMovie(movie);
+    setRecentlyViewed((prev) => {
+      const next = [movie, ...prev.filter((item) => item.id !== movie.id)];
+      return next.slice(0, 12);
     });
   }, []);
 
@@ -132,8 +245,8 @@ export default function App() {
   const openRandomMovie = useCallback(() => {
     if (displayedMovies.length === 0) return;
     const index = Math.floor(Math.random() * displayedMovies.length);
-    setSelectedMovie(displayedMovies[index]);
-  }, [displayedMovies]);
+    openMovie(displayedMovies[index]);
+  }, [displayedMovies, openMovie]);
 
   const isSearching = !!query.trim();
   const isFiltering = !!activeGenre;
@@ -148,7 +261,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-cinema-950 noise-overlay">
-      {/* Ambient background orbs */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none overflow-hidden"
@@ -161,7 +273,6 @@ export default function App() {
       <Header favoritesCount={favorites.length} />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16">
-        {/* Hero section */}
         <section className="text-center mb-10 sm:mb-14 animate-fade-up">
           <div className="inline-flex items-center gap-2 bg-gold-400/10 border border-gold-400/20 rounded-full px-4 py-1.5 mb-5">
             <span className="text-gold-400 text-xs font-mono tracking-widest uppercase">
@@ -178,7 +289,6 @@ export default function App() {
           </p>
         </section>
 
-        {/* Search */}
         <section
           className="mb-8 sm:mb-10 animate-fade-up"
           style={{ animationDelay: "100ms" }}
@@ -191,13 +301,17 @@ export default function App() {
           />
         </section>
 
-        {/* Sort + Genre filters */}
+        <RecentlyViewedStrip
+          movies={recentlyViewed}
+          onOpenMovie={openMovie}
+          onClear={() => setRecentlyViewed([])}
+        />
+
         {!isSearching && (
           <section
             className="mb-8 space-y-4 animate-fade-up"
             style={{ animationDelay: "160ms" }}
           >
-            {/* Sort tabs */}
             <div className="flex gap-2 flex-wrap">
               {SORT_OPTIONS.map((opt) => (
                 <button
@@ -217,7 +331,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Genre chips */}
             {genres.length > 0 && (
               <GenreFilter
                 genres={genres}
@@ -228,18 +341,17 @@ export default function App() {
           </section>
         )}
 
-        {/* Controls */}
         <section className="mb-5 flex flex-wrap items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => setShowFavoritesOnly((prev) => !prev)}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono transition-colors ${
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono transition-all duration-200 hover:scale-105 active:animate-button-press hover:shadow-lg ${
               showFavoritesOnly
-                ? "bg-gold-400/15 border-gold-400/40 text-gold-400"
-                : "border-white/10 text-white/45 hover:text-white hover:border-white/25"
+                ? "bg-gold-400/15 border-gold-400/40 text-gold-400 hover:shadow-gold-400/30"
+                : "border-white/10 text-white/45 hover:text-white hover:border-white/25 hover:shadow-white/10"
             }`}
           >
             <svg
-              className="w-3.5 h-3.5"
+              className="w-3.5 h-3.5 transition-transform duration-200"
               viewBox="0 0 24 24"
               fill={showFavoritesOnly ? "currentColor" : "none"}
             >
@@ -254,14 +366,14 @@ export default function App() {
             {showFavoritesOnly ? "Showing Favorites" : "Show Favorites"}
           </button>
 
-          <div className="inline-flex items-center gap-2 border border-white/10 rounded-lg px-2.5 py-2">
+          <div className="inline-flex items-center gap-2 border border-white/10 rounded-lg px-2.5 py-2 transition-all duration-200 hover:shadow-lg hover:shadow-white/10 hover:border-white/20">
             <span className="text-[11px] text-white/35 font-mono uppercase tracking-wider">
               Sort
             </span>
             <select
               value={resultSortMode}
               onChange={(e) => setResultSortMode(e.target.value)}
-              className="bg-transparent text-xs text-white/80 font-mono focus:outline-none"
+              className="bg-transparent text-xs text-white/80 font-mono focus:outline-none transition-colors cursor-pointer hover:text-white"
               aria-label="Sort current results"
             >
               {RESULT_SORT_OPTIONS.map((option) => (
@@ -277,11 +389,36 @@ export default function App() {
           </div>
 
           <button
-            onClick={openRandomMovie}
-            disabled={displayedMovies.length === 0}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-xs font-mono text-white/45 hover:text-white hover:border-white/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            onClick={() => setShowWatchlist((prev) => !prev)}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono transition-colors ${
+              showWatchlist
+                ? "bg-white/10 border-white/25 text-white"
+                : "border-white/10 text-white/45 hover:text-white hover:border-white/25"
+            }`}
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M4 5h16M4 12h16M4 19h16"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            {showWatchlist
+              ? "Hide Watchlist"
+              : `Watchlist (${watchlist.length})`}
+          </button>
+
+          <button
+            onClick={openRandomMovie}
+            disabled={displayedMovies.length === 0}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-xs font-mono text-white/45 hover:text-white hover:border-white/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:animate-button-press hover:shadow-lg hover:shadow-white/10"
+          >
+            <svg
+              className="w-3.5 h-3.5 transition-transform duration-200 group-active:rotate-12"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
               <path
                 d="M16 3h5v5M4 20l6-6M20 4l-8 8M4 4l5 5M20 20l-5-5"
                 stroke="currentColor"
@@ -294,7 +431,15 @@ export default function App() {
           </button>
         </section>
 
-        {/* Section label */}
+        {showWatchlist && (
+          <WatchlistPanel
+            items={watchlist}
+            onOpenMovie={openMovie}
+            onRemove={removeFromWatchlist}
+            onUpdate={updateWatchlistMeta}
+          />
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 bg-gold-400 rounded-full" />
@@ -321,7 +466,6 @@ export default function App() {
             )}
         </div>
 
-        {/* States */}
         {showFavoritesOnly ? (
           displayedMovies.length === 0 ? (
             <div className="border border-white/10 rounded-xl p-8 sm:p-10 bg-white/5 text-center">
@@ -354,7 +498,7 @@ export default function App() {
                   key={movie.id}
                   movie={movie}
                   index={i}
-                  onClick={setSelectedMovie}
+                  onClick={openMovie}
                   isFavorite={favoriteIds.has(movie.id)}
                   onToggleFavorite={toggleFavorite}
                 />
@@ -373,21 +517,19 @@ export default function App() {
           <EmptyState query={query} />
         ) : (
           <>
-            {/* Movie grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {displayedMovies.map((movie, i) => (
                 <MovieCard
                   key={movie.id}
                   movie={movie}
                   index={i}
-                  onClick={setSelectedMovie}
+                  onClick={openMovie}
                   isFavorite={favoriteIds.has(movie.id)}
                   onToggleFavorite={toggleFavorite}
                 />
               ))}
             </div>
 
-            {/* Pagination */}
             <div className="mt-10">
               <Pagination
                 page={page}
@@ -402,7 +544,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 py-6 mt-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="font-display text-lg text-white/20 tracking-widest">
@@ -423,13 +564,15 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Movie detail modal */}
       {selectedMovie && (
         <MovieModal
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
           isFavorite={favoriteIds.has(selectedMovie.id)}
           onToggleFavorite={toggleFavorite}
+          isInWatchlist={watchlistIds.has(selectedMovie.id)}
+          onToggleWatchlist={toggleWatchlist}
+          watchlistEntry={watchlistMap[selectedMovie.id]}
         />
       )}
     </div>

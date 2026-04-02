@@ -1,19 +1,25 @@
 export default function Pagination({ page, totalPages, onPageChange }) {
-  if (totalPages <= 1) return null
+  if (totalPages <= 1) return null;
 
-  const max = Math.min(totalPages, 500)
+  const max = Math.min(totalPages, 500);
 
   const getPages = () => {
-    const pages = []
-    const delta = 2
-    const left = Math.max(1, page - delta)
-    const right = Math.min(max, page + delta)
+    const pages = [];
+    const delta = 2;
+    const left = Math.max(1, page - delta);
+    const right = Math.min(max, page + delta);
 
-    if (left > 1) { pages.push(1); if (left > 2) pages.push('...') }
-    for (let i = left; i <= right; i++) pages.push(i)
-    if (right < max) { if (right < max - 1) pages.push('...'); pages.push(max) }
-    return pages
-  }
+    if (left > 1) {
+      pages.push(1);
+      if (left > 2) pages.push("...");
+    }
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < max) {
+      if (right < max - 1) pages.push("...");
+      pages.push(max);
+    }
+    return pages;
+  };
 
   return (
     <div className="flex items-center justify-center gap-1.5 flex-wrap">
@@ -21,44 +27,69 @@ export default function Pagination({ page, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-body font-medium border border-white/10 text-white/50 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-body font-medium border border-white/10 text-white/50 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:animate-button-press not-disabled:hover:shadow-lg not-disabled:hover:shadow-white/10"
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg
+          className="w-4 h-4 transition-transform duration-200"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M15 18l-6-6 6-6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         <span className="hidden sm:inline">Prev</span>
       </button>
 
       {/* Page numbers */}
       {getPages().map((p, i) =>
-        p === '...' ? (
-          <span key={`ellipsis-${i}`} className="w-9 text-center text-white/20 text-sm">…</span>
+        p === "..." ? (
+          <span
+            key={`ellipsis-${i}`}
+            className="w-9 text-center text-white/20 text-sm"
+          >
+            …
+          </span>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p)}
-            className={`w-9 h-9 rounded-lg text-sm font-mono font-medium border transition-all ${
+            className={`w-9 h-9 rounded-lg text-sm font-mono font-medium border transition-all duration-200 hover:scale-110 active:animate-button-press ${
               p === page
-                ? 'bg-gold-400/15 border-gold-400/40 text-gold-400'
-                : 'border-white/10 text-white/40 hover:text-white hover:border-white/25'
+                ? "bg-gold-400/15 border-gold-400/40 text-gold-400 hover:shadow-lg hover:shadow-gold-400/30"
+                : "border-white/10 text-white/40 hover:text-white hover:border-white/25 hover:shadow-lg hover:shadow-white/10"
             }`}
           >
             {p}
           </button>
-        )
+        ),
       )}
 
       {/* Next */}
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === max}
-        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-body font-medium border border-white/10 text-white/50 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-body font-medium border border-white/10 text-white/50 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:animate-button-press not-disabled:hover:shadow-lg not-disabled:hover:shadow-white/10"
       >
         <span className="hidden sm:inline">Next</span>
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-          <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg
+          className="w-4 h-4 transition-transform duration-200"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M9 18l6-6-6-6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
     </div>
-  )
+  );
 }
