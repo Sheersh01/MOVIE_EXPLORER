@@ -38,6 +38,7 @@
 ## 🚀 Live Demo
 
 [**GitHub Repository →**](https://github.com/Sheersh01/MOVIE_EXPLORER)
+[**Video Demo →**](https://drive.google.com/file/d/1eqKin4q_vmTKvaTPy_mGqx2NGVc_8e_X/view?usp=sharing)
 
 _Deploy your own on Vercel in 1 click (see Setup section)_
 
