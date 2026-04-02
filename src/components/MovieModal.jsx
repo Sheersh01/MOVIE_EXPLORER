@@ -1,28 +1,38 @@
-import { useEffect } from 'react'
-import { posterUrl, backdropUrl, formatYear, formatRating, truncate } from '../utils/helpers'
+import { useEffect } from "react";
+import {
+  posterUrl,
+  backdropUrl,
+  formatYear,
+  formatRating,
+} from "../utils/helpers";
 
-export default function MovieModal({ movie, onClose }) {
+export default function MovieModal({
+  movie,
+  onClose,
+  isFavorite = false,
+  onToggleFavorite,
+}) {
   useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    const onKey = (e) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [onClose])
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
 
-  if (!movie) return null
+  if (!movie) return null;
 
-  const poster = posterUrl(movie.poster_path, 'w342')
-  const backdrop = backdropUrl(movie.backdrop_path, 'w1280')
+  const poster = posterUrl(movie.poster_path, "w342");
+  const backdrop = backdropUrl(movie.backdrop_path, "w1280");
 
   const ratingColor =
     movie.vote_average >= 7.5
-      ? 'text-green-400 border-green-400/30 bg-green-400/10'
+      ? "text-green-400 border-green-400/30 bg-green-400/10"
       : movie.vote_average >= 6
-      ? 'text-gold-400 border-gold-400/30 bg-gold-400/10'
-      : 'text-coral-400 border-coral-400/30 bg-coral-400/10'
+        ? "text-gold-400 border-gold-400/30 bg-gold-400/10"
+        : "text-coral-400 border-coral-400/30 bg-coral-400/10";
 
   return (
     <div
@@ -59,7 +69,12 @@ export default function MovieModal({ movie, onClose }) {
           aria-label="Close"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <path
+              d="M18 6L6 18M6 6l12 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
 
@@ -79,14 +94,20 @@ export default function MovieModal({ movie, onClose }) {
                 {movie.title.toUpperCase()}
               </h2>
               {movie.original_title && movie.original_title !== movie.title && (
-                <p className="text-white/30 text-xs font-mono mt-0.5">{movie.original_title}</p>
+                <p className="text-white/30 text-xs font-mono mt-0.5">
+                  {movie.original_title}
+                </p>
               )}
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="text-white/40 text-xs font-mono">{formatYear(movie.release_date)}</span>
+                <span className="text-white/40 text-xs font-mono">
+                  {formatYear(movie.release_date)}
+                </span>
                 {movie.vote_average > 0 && (
-                  <span className={`inline-flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded border ${ratingColor}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded border ${ratingColor}`}
+                  >
                     <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                     {formatRating(movie.vote_average)} / 10
                   </span>
@@ -96,15 +117,42 @@ export default function MovieModal({ movie, onClose }) {
                     {movie.vote_count.toLocaleString()} votes
                   </span>
                 )}
+                {onToggleFavorite && (
+                  <button
+                    onClick={() => onToggleFavorite(movie)}
+                    className={`inline-flex items-center gap-1.5 text-xs font-mono px-2 py-0.5 rounded border transition-colors ${
+                      isFavorite
+                        ? "text-gold-400 border-gold-400/40 bg-gold-400/10"
+                        : "text-white/50 border-white/15 hover:text-white hover:border-white/30"
+                    }`}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      viewBox="0 0 24 24"
+                      fill={isFavorite ? "currentColor" : "none"}
+                    >
+                      <path
+                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09A6 6 0 0 1 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {isFavorite ? "Saved" : "Save"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
           {/* Overview */}
           <div className="mt-5">
-            <h3 className="text-xs font-mono text-gold-400 uppercase tracking-widest mb-2">Overview</h3>
+            <h3 className="text-xs font-mono text-gold-400 uppercase tracking-widest mb-2">
+              Overview
+            </h3>
             <p className="text-white/60 text-sm leading-relaxed font-body">
-              {movie.overview || 'No description available for this title.'}
+              {movie.overview || "No description available for this title."}
             </p>
           </div>
 
@@ -112,20 +160,32 @@ export default function MovieModal({ movie, onClose }) {
           <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
             {movie.release_date && (
               <div className="bg-cinema-700/50 rounded-lg p-3 border border-white/5">
-                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">Release</div>
-                <div className="text-white text-sm font-body">{movie.release_date}</div>
+                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">
+                  Release
+                </div>
+                <div className="text-white text-sm font-body">
+                  {movie.release_date}
+                </div>
               </div>
             )}
             {movie.original_language && (
               <div className="bg-cinema-700/50 rounded-lg p-3 border border-white/5">
-                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">Language</div>
-                <div className="text-white text-sm font-body uppercase">{movie.original_language}</div>
+                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">
+                  Language
+                </div>
+                <div className="text-white text-sm font-body uppercase">
+                  {movie.original_language}
+                </div>
               </div>
             )}
             {movie.popularity != null && (
               <div className="bg-cinema-700/50 rounded-lg p-3 border border-white/5">
-                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">Popularity</div>
-                <div className="text-white text-sm font-mono">{Math.round(movie.popularity)}</div>
+                <div className="text-white/30 text-[10px] font-mono uppercase tracking-wider mb-1">
+                  Popularity
+                </div>
+                <div className="text-white text-sm font-mono">
+                  {Math.round(movie.popularity)}
+                </div>
               </div>
             )}
           </div>
@@ -140,7 +200,13 @@ export default function MovieModal({ movie, onClose }) {
               onClick={(e) => e.stopPropagation()}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               View on TMDB
             </a>
@@ -148,5 +214,5 @@ export default function MovieModal({ movie, onClose }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
