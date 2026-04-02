@@ -547,7 +547,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-white/5 py-6 mt-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="font-display text-lg text-white/20 tracking-widest">
-            CINESCOPE
+            MOVIEVAULT
           </span>
           <p className="text-white/20 text-xs font-mono text-center">
             Data provided by{" "}

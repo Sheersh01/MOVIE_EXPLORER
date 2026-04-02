@@ -1,4 +1,4 @@
-# 🎬 CineScope — Movie Explorer
+# 🎬 MovieVault — Movie Explorer
 
 > A responsive, component-based React application for discovering and searching movies using The Movie Database (TMDB) API with advanced features like favorites, watchlist, and recently viewed tracking.
 

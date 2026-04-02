@@ -49,7 +49,7 @@ export default function Header({ favoritesCount = 0 }) {
           </div>
           <div>
             <span className="font-display text-2xl text-white tracking-wider leading-none">
-              CINE<span className="text-gold-400">SCOPE</span>
+              MOVIE<span className="text-gold-400">VAULT</span>
             </span>
             <div className="text-xs text-white/30 font-mono tracking-widest uppercase leading-none">
               Movie Explorer
